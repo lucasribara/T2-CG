@@ -1,0 +1,310 @@
+<!DOCTYPE html PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html><head>
+
+
+
+
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="Author" content="Marcio Serolli Pinho">
+   <meta name="GENERATOR" content="Mozilla/4.78 [en] (Windows NT 5.0; U) [Netscape]"><title>Mapeamento de Texturas em OpenGL</title></head><body>
+&nbsp;
+<table style="text-align: left; width: 100%; font-family: Arial;" border="0" cellpadding="2" cellspacing="2">
+<tbody><tr><td style="vertical-align: top;"><a href="http://www.pucrs.br/"><img style="border: 0px solid ; width: 127px; height: 180px;" alt="" src="http://www.inf.pucrs.br/pinho/Logotipos/SomenteBrasao.png"></a><a href="http://www.pucrs.br/politecnica/"><img src="http://www.inf.pucrs.br/pinho/Logotipos/SomentePoliAzul.png" alt="" style="border: 0px solid ; width: 376px; height: 180px;"></a><br>
+      </td>
+      <td style="vertical-align: top; text-align: right;"><a href="http://grv.inf.pucrs.br/"><img style="border: 0px solid ; width: 408px; height: 180px;" alt="" src="http://grv.inf.pucrs.br/img/logo_grv_low3.png"></a></td>
+    </tr>
+  </tbody>
+</table>
+
+
+
+
+<big><big><big><span style="font-family: Arial;"></span></big></big></big>
+
+<div style="font-weight: bold; color: rgb(51, 51, 255); font-family: Arial; text-align: center;">
+<hr style="width: 100%; height: 2px;"></div>
+
+
+<div style="text-align: center;"><span style="font-family: Arial;"></span><big><big><a style="font-family: Arial;" href="http://www.inf.pucrs.br/%7Epinho">Prof.
+Márcio Sarroglia
+Pinho</a></big></big></div>
+<br>&nbsp;
+<center><table border="0">
+<tbody><tr>
+<td><img src="Texture1.jpg" border="0" height="225" width="255"></td>
+
+<td>
+<h1>
+Mapeamento de Texturas</h1>
+</td>
+</tr>
+</tbody></table></center>
+
+<p style="font-family: Arial;"><big>No contexto de Computação Gráfica, o mapeamento
+de texturas consiste na "aplicação" de uma imagem sobre as
+faces de um objeto 3D.
+</big></p><p style="font-family: Arial;"><big>O uso de texturas requer a execução de dois passos distintos:
+a <b>CARGA</b> e a <b>APLICAÇÃO</b> da textura.
+</big></p><p style="font-family: Arial;"><big>Em OpenGL cada textura recebe um número de identificação
+através da função <b>glGenTextures</b>. Por
+exemplo:
+</big></p><p><big><span style="font-family: Arial;">Sempre que for necessário trabalhar com um textura (para carga
+ou aplicação) deve-se chamar a função </span><b style="font-family: Arial;">glBindTexture
+</b><span style="font-family: Arial;">que
+permite&nbsp; definir a </span><b style="font-family: Arial;">textura corrente</b><span style="font-family: Arial;">. Esta definição
+é feita atavés do número de identificaçõa
+da textura.
+</span></big><br>&nbsp;
+</p><h2>
+Carga de uma textura</h2><big><span style="font-family: Arial;">
+Para realizar a tarefa de CARGA de uma textura é necessário
+seguir os seguintes passos:</span></big>
+<blockquote>
+<blockquote><tt>&nbsp;// Habilitar o uso de texturas</tt>
+<br><tt>&nbsp;glEnable ( GL_TEXTURE_2D );</tt>
+<p><tt>&nbsp;// Definir a forma de armazenamento dos pixels na textura
+(1= alinhamento por byte)</tt>
+<br><tt>&nbsp;glPixelStorei ( GL_UNPACK_ALIGNMENT, 1 );</tt>
+</p><p><tt>&nbsp;// Definir quantas texturas serão usadas no programa</tt>
+<br><tt>&nbsp;GLuint texture_id[MAX_NO_TEXTURES]; // vetor com os números
+das texturas</tt>
+<br><tt>&nbsp;glGenTextures (1, texture_id);&nbsp; // 1 = uma textura;</tt>
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+// texture_id = vetor que guarda os números das texturas</tt>
+</p><p><tt>&nbsp;// Definr o número da textura do cubo.</tt>
+<br><tt>&nbsp;texture_id[0] = 1001;</tt>
+</p><p><tt>&nbsp;// Define a textura corrente</tt>
+<br><tt>&nbsp;glBindTexture ( GL_TEXTURE_2D, texture_id[0] );</tt>
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+// GL_TEXTURE_2D ==&gt; define que será usada uma textura 2D (bitmaps)</tt>
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+// texture_id[CUBE_TEXTURE]&nbsp; ==&gt; define o número da textura</tt>
+</p><p><tt>&nbsp;// carrega a uma imagem TGA</tt>
+<br><tt>&nbsp;image_t temp_image;</tt>
+<br><tt>&nbsp;tgaLoad&nbsp; ( "TCG1.tga", &amp;temp_image, TGA_FREE | TGA_LOW_QUALITY
+);</tt>
+<br>&nbsp;</p></blockquote>
+</blockquote>
+
+<h2 style="font-family: Arial;">
+Aplicação de uma Textura</h2><big>
+Para a aplicação da textura é preciso criar uma relação
+entre os vértives da textura e os vértices dos polígonos
+sobre
+os quais se desenha mapear a textura escolhida.
+<br style="font-family: Arial;">
+Na figura a seguir as letras A, B, C e D definem os vértices
+da textura e os vértices A1, B1, C1 e D1 os vértices de polígono
+3D onde deve ser mapeada esta textura.
+<br style="font-family: Arial;">
+O processo de mapeamento de texturas em OpenGL consiste em "aplicar"
+a imagem 2D sobre o polígono 3D de forma que os pontos A, B, C e
+D sejam encaixados sobre os pontos A1, B1, C1 e D1.
+</big><br>&nbsp;
+<br>&nbsp;
+<center><table>
+<tbody><tr>
+<td><img src="Mapa1a.jpg" height="325" width="325"></td>
+
+<td><img src="Texture1a.jpg" height="400" width="434"></td>
+</tr>
+</tbody></table></center>
+
+<p><big>Para permitir a construção desta correspondência
+entre a imagem 2D e o polígono 3D usa-se a função
+glTexCoord2f
+antes da definição do ponto 3D.
+Por exemplo,
+</big><br>
+
+</p><blockquote><big>
+  </big><blockquote><big><b><tt>&nbsp; </tt></b><tt>glTexCoord2f(0.0f, 0.0f);</tt><span style="font-family: monospace;">
+    </span><br style="font-family: monospace;">
+    <span style="font-family: monospace;">&nbsp; glVertex3f(1.0f,&nbsp; -1.0f, 1.0f);</span></big></blockquote><big>
+  </big></blockquote>
+
+<p><br><big>define que o ponto (0.0, 0.0) da textura 2D corresponde ao
+ponto (1.0,&nbsp; -1.0,&nbsp; 1.0) do polígono 3D.
+</big></p><p><big>O sistema de coordenadas da textura tem como (0,0) o ponto inferior
+esquerdo da imagem e como (1,1) o ponto superior direito. Ou seja,
+na imagem acima temos as seguintes coordenadas para os pontos A, B, C e
+D.
+</big><br>&nbsp;
+<big><br style="font-family: Arial;">
+<span style="font-family: Arial;">&nbsp;
+</span></big></p><center style="font-family: Arial;"><big>
+  </big><big>
+      </big><big>
+
+      </big><big>
+      </big><big>
+
+    </big><big>
+      </big><big>
+
+      </big><big>
+      </big><big>
+
+    </big><big>
+      </big><big>
+
+      </big><big>
+      </big><big>
+
+    </big><big>
+      </big><big>
+
+      </big><big>
+      </big><big>
+
+    </big><big>
+      </big><big>
+
+      </big><big>
+      </big><big>
+    </big><table style="width: 20%;" border="1"><tbody><tr><td><big>
+      </big><center><big><b>Vértice da&nbsp;</b>
+      <br>
+      <b>Textura</b></big></center><big>
+      </big></td><td><big>
+      </big><center><big><b>Coordenada</b></big></center><big>
+      </big></td></tr><tr><td><big>
+      </big><center><big>A</big></center><big>
+      </big></td><td><big>
+      </big><center><big>(0,1)</big></center><big>
+      </big></td></tr><tr><td><big>
+      </big><center><big>B</big></center><big>
+      </big></td><td><big>
+      </big><center><big>(1,1)</big></center><big>
+      </big></td></tr><tr><td><big>
+      </big><center><big>C</big></center><big>
+      </big></td><td><big>
+      </big><center><big>(1,0)</big></center><big>
+      </big></td></tr><tr><td><big>
+      </big><center><big>D</big></center><big>
+      </big></td><td><big>
+      </big><center><big>(0,0)</big></center><big>
+      </big></td></tr></tbody></table></center>
+
+<p style="font-family: Arial;"><big>Supondo que o polígono 3D é a face lateral direita de
+um cubo de aresta 2 com o centro no ponto (0,0,0) teremos as seguintes
+coordenadas:
+<br>
+
+</big></p><center style="font-family: Arial;">
+<big>
+  </big><big>
+      </big><big>
+
+      </big><big>
+      </big><big>
+
+    </big><big>
+      </big><big>
+
+      </big><big>
+      </big><big>
+
+    </big><big>
+      </big><big>
+
+      </big><big>
+      </big><big>
+
+    </big><big>
+      </big><big>
+
+      </big><big>
+      </big><big>
+
+    </big><big>
+      </big><big>
+
+      </big><big>
+      </big><big>
+    </big>
+  <table border="1">
+  <tbody>
+<tr><td><big>
+      </big><center><big><b>Vértice do</b>
+      <br>
+      <b>Polígono 3D</b></big></center><big>
+      </big></td><td><big>
+      </big><center><big><b>Coordenada</b></big></center><big>
+      </big></td></tr><tr>
+      <td><big>
+      </big><center><big>A1</big></center><big>
+      </big></td><td><big>1.0,&nbsp; 1.0,&nbsp; 1.0</big></td></tr>
+    <tr>
+      <td><big>
+      </big><center><big>B1</big></center><big>
+      </big></td><td><big>1.0,&nbsp; 1.0, -1.0</big></td></tr>
+    <tr>
+      <td><big>
+      </big><center><big>C1</big></center><big>
+      </big></td><td><big>1.0, -1.0, -1.0</big></td></tr>
+    <tr>
+      <td><big>
+      </big><center><big>D1</big></center><big>
+      </big></td><td><big>1.0, -1.0,&nbsp; 1.0</big></td></tr>
+    </tbody>
+</table>
+</center>
+
+<p><big><span style="font-family: Arial;">O mapeamento da textura sobre o polígono se dá através
+do seguinte trecho de código:
+</span><span style="font-family: Arial;"></span></big><br>
+
+</p><blockquote>
+<blockquote>
+<blockquote><tt>&nbsp;&nbsp; // Define a textura corrente</tt>
+<br><tt>&nbsp;&nbsp; glBindTexture ( GL_TEXTURE_2D, texture_id[0] );</tt>
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+// GL_TEXTURE_2D ==&gt; define que será usada uma textura 2D (bitmaps)</tt>
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+// texture_id[CUBE_TEXTURE]&nbsp; ==&gt; define o número da textura</tt>
+<p><tt>&nbsp; // associa cada vértice do polígono a um ponto
+da textura</tt>
+<br><tt>&nbsp; glTexCoord2f(1.0f, 0.0f); glVertex3f( 1.0f, -1.0f, -1.0f);</tt>
+<br><tt>&nbsp; glTexCoord2f(1.0f, 1.0f); glVertex3f( 1.0f,&nbsp; 1.0f,
+-1.0f);</tt>
+<br><tt>&nbsp; glTexCoord2f(0.0f, 1.0f); glVertex3f( 1.0f,&nbsp; 1.0f,&nbsp;
+1.0f);</tt>
+<br><tt>&nbsp; glTexCoord2f(0.0f, 0.0f); glVertex3f( 1.0f, -1.0f,&nbsp;
+1.0f);</tt></p></blockquote>
+</blockquote>
+</blockquote><big style="font-family: Arial;">
+É importante lembrar ainda que para definir qual a textura a ser
+usada em um certo polígono é preciso defini-la antes
+como a textura corrente através da função glBindTexture.</big>
+<h2 style="font-family: Arial;">
+Programas-Exemplo</h2><big>
+Para compilar estes exemplos é necessário "linkar" as seguintes
+bibliotecas com os fontes: OpenGL32.lib, GLU32.lib, GLUT32.lib.
+</big><br>&nbsp;
+<center><table width="32%">
+<tbody><tr>
+<td><a href="FirstTexture.zip">Exemplo 1 (Visual C++)</a></td>
+
+<td><a href="FirstTexture-DevCPP.zip">Exemplo 1 (DEVCPP)</a></td>
+</tr>
+
+<tr>
+<td><a href="SecondTexture.zip">Exemplo 2 (Visual C++)</a></td>
+
+<td><a href="SecondTexture-DevCPP.zip">Exemplo 2 (DEVCPP)</a></td>
+</tr>
+
+<tr>
+<td><a href="JPG.zip">Exemplo para Carga de JPG</a>&nbsp;</td>
+
+<td><br>
+</td>
+</tr>
+</tbody></table></center>
+
+<br><a href="devcpp4.zip"></a>&nbsp;
+<br>&nbsp;
+<br>&nbsp;
+<br>&nbsp;
+</body></html>

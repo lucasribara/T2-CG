@@ -46,7 +46,7 @@ ifstream arquivo;
 int altura, largura;
 
 GLfloat AspectRatio, AngY=0;
-GLuint TEX1, TEX2, TEX3, TEXDirt;
+GLuint TEX1, TEX2, TEX3, TEXDirt, TEXFuel;
 float alvoNovoX=0, alvoNovoY=0, alvoNovoZ=-8;
 float posX=0, posY=0, posZ=0;
 float mov = 3;
@@ -165,6 +165,7 @@ void initTexture (void)
     TEX2 = LoadTexture ("House.png");
     TEX3 = LoadTexture("Grass.png");
     TEXDirt = LoadTexture("Dirt.png");
+    TEXFuel = LoadTexture("Fuel.png");
 }
 
 
@@ -307,7 +308,65 @@ void reshape( int w, int h )
 	PosicUser();
 
 }
-
+void DesenhaCombustivel()
+{
+    glBegin ( GL_QUADS );
+    // Front Face
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex3f(-1.0f, -1.0f,  1.0f);
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex3f( 1.0f, -1.0f,  1.0f);
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex3f( 1.0f,  1.0f,  1.0f);
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex3f(-1.0f,  1.0f,  1.0f);
+    // Back Face
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex3f(-1.0f, -1.0f, -1.0f);
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex3f(-1.0f,  1.0f, -1.0f);
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex3f( 1.0f,  1.0f, -1.0f);
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex3f( 1.0f, -1.0f, -1.0f);
+    // Top Face
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex3f(-1.0f,  1.0f, -1.0f);
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex3f(-1.0f,  1.0f,  1.0f);
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex3f( 1.0f,  1.0f,  1.0f);
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex3f( 1.0f,  1.0f, -1.0f);
+    // Bottom Face
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex3f(-1.0f, -1.0f, -1.0f);
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex3f( 1.0f, -1.0f, -1.0f);
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex3f( 1.0f, -1.0f,  1.0f);
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex3f(-1.0f, -1.0f,  1.0f);
+    // Right face
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex3f( 1.0f, -1.0f, -1.0f);
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex3f( 1.0f,  1.0f, -1.0f);
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex3f( 1.0f,  1.0f,  1.0f);
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex3f( 1.0f, -1.0f,  1.0f);
+    // Left Face
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex3f(-1.0f, -1.0f, -1.0f);
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex3f(-1.0f, -1.0f,  1.0f);
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex3f(-1.0f,  1.0f,  1.0f);
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex3f(-1.0f,  1.0f, -1.0f);
+    glEnd();
+}
 // **********************************************************************
 //   void DesenhaCubo (GLuint nro_da_textura)
 //
@@ -414,15 +473,15 @@ void CriaObjetoMapa(float transX, float transZ, int obj)
         glPopMatrix();
         break;
     case 4:
-        glPushMatrix();
-        glTranslatef ( transX, -1.0f, transZ );
-        glBindTexture (GL_TEXTURE_2D, TEX3);
-        glScalef(1.0f, 0.01f, 1.0f);
-        DesenhaCubo();
-        glPopMatrix();
+        //glPushMatrix();
+        //glTranslatef ( transX, -1.0f, transZ );
+        //glBindTexture (GL_TEXTURE_2D, TEX3);
+        //glScalef(1.0f, 0.01f, 1.0f);
+        //DesenhaCubo();
+        //glPopMatrix();
 
         glPushMatrix();
-		glTranslatef ( transX+0.3, -1.0f, transZ );
+		glTranslatef ( transX, -0.9f, transZ );
         //glRotatef(AngY,0,1,0);
 		//glColor3f(0.5f,0.0f,0.0f); // Vermelho
         glScaled(0.1f, 0.1f, 0.1f);
@@ -430,6 +489,15 @@ void CriaObjetoMapa(float transX, float transZ, int obj)
         glPopMatrix();
         break;
 
+    }
+    if(obj != 0)
+    {
+        glPushMatrix();
+        glTranslatef ( transX, -1.0f, transZ );
+        glBindTexture (GL_TEXTURE_2D, TEX3);
+        glScalef(1.0f, 0.01f, 1.0f);
+        DesenhaCubo();
+        glPopMatrix();
     }
 
 }
@@ -483,8 +551,9 @@ void display( void )
 		glTranslatef ( -2.0f, 1.0f, -5.0f );
 		//glRotatef(AngY,0,1,0);
 		//glColor3f(0.0f,0.6f,0.0f); // Verde
-        glBindTexture (GL_TEXTURE_2D, TEX2);
-		DesenhaCubo();
+        glBindTexture (GL_TEXTURE_2D, TEXFuel);
+        glScaled(0.1f, 0.1f, 0.1f);
+		DesenhaCombustivel();
 		//glTranslatef ( -2.0f, 2.0f, -5.0f );
 	glPopMatrix();
 

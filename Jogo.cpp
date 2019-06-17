@@ -1,12 +1,22 @@
-// **********************************************************************
-// PUCRS/Escola PolitŽcnica
-// COMPUTA‚ÌO GRçFICA
+// **************************************************************************************************************************************
+// Pontifícia Universidade Católica do Rio Grande do Sul
+// Escola Politécnica
+// Bacharelado em Ciência da Computação
+// Fundamentos de Computação Gráfica
 //
-// Programa b‡sico para criar aplicacoes 3D em OpenGL
+// Trabalho T2
 //
-// Marcio Sarroglia Pinho
-// pinho@pucrs.br
-// **********************************************************************
+// Autores:
+//
+// Kin Max Piamolini Gusmão
+// Kin.Gusmao@edu.pucrs.br
+//
+// Lucas Ribeiro de Araujo
+// Lucas.Ribeiro99@edu.pucrs.br
+//
+// Desenvolvido com base nos programas disponibilizados em aula pelo professor Marcio Sarroglia Pinho (http://www.inf.pucrs.br/~pinho/)
+//
+// **************************************************************************************************************************************
 
 #include <iostream>
 #include <cmath>

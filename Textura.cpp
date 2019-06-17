@@ -248,10 +248,10 @@ bool testaColisaoObjetoEstatico()
     int i;
     for(i = 0; i < nObjs; i++)
     {
-        if(play.pos.x > objs[i].min_x-colisionThrehsold &&
-           play.pos.x < objs[i].max_x+colisionThrehsold &&
-           play.pos.z > objs[i].min_z-colisionThrehsold &&
-            play.pos.z < objs[i].max_z+colisionThrehsold)
+        if(play.pos.x+(play.alvo.x*0.1f) > objs[i].min_x-colisionThrehsold &&
+           play.pos.x+(play.alvo.x * 0.1f) < objs[i].max_x+colisionThrehsold &&
+           play.pos.z+(play.alvo.z*0.1f) > objs[i].min_z-colisionThrehsold &&
+            play.pos.z+(play.alvo.z*0.1f) < objs[i].max_z+colisionThrehsold)
         {
             //if()
             cout << "COLISAO" << endl;
@@ -865,11 +865,7 @@ void arrow_keys ( int a_keys, int x, int y )
 			if(true)
             {
                 objCol = testaColisaoObjetoEstatico();
-                if(objCol == true)
-                {
-                    play.pos.x += play.alvo.x * fraction;
-                }
-                else
+                if(objCol == false)
                 {
                     play.pos.x += play.alvo.x * fraction;
                     play.pos.z += play.alvo.z * fraction;

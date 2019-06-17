@@ -935,6 +935,10 @@ void andaInimigo(int i)
     inimigos[i].alvo = vetorUnitario(inimigos[i].pos, play.pos);
     inimigos[i].pos.x += inimigos[i].alvo.x * velInimigo;
     inimigos[i].pos.z += inimigos[i].alvo.z * velInimigo;
+    inimigos[i].max_x = inimigos[i].pos.x + inimigos[i].scale.x;
+    inimigos[i].min_x = inimigos[i].pos.x - inimigos[i].scale.x;
+    inimigos[i].max_z = inimigos[i].pos.z + inimigos[i].scale.z;
+    inimigos[i].min_z = inimigos[i].pos.z - inimigos[i].scale.z;
 }
 
 // **********************************************************************
@@ -1000,6 +1004,8 @@ void display( void )
         }
 
         testaColisaoTiroPlayer();
+        testaColisaoInimigos();
+        testaColisaoCombustivel();
 
         char* buf = new char[10];
         sprintf(buf,"%.2f", play.fuelLevel);
@@ -1148,20 +1154,17 @@ void arrow_keys ( int a_keys, int x, int y )
 		case GLUT_KEY_UP:
 			if(true)
             {
-                testaColisaoInimigos();
-                testaColisaoCombustivel();
                 angleY = 0.0f;
                 play.alvo.y = 0.0f;
                 if(testaColisaoObjetoEstatico() == false && testaColisaoLimites() == false)
                 {
-                    play.fuelLevel -= 0.5f;
-                    if(play.fuelLevel <= 0.0f)
+                    if(play.fuelLevel > 0.0f)
                     {
-                        play.vivo = false;
-                        break;
+                        play.fuelLevel -= 0.25f;
+                        play.pos.x += play.alvo.x * fraction;
+                        play.pos.z += play.alvo.z * fraction;
                     }
-                    play.pos.x += play.alvo.x * fraction;
-                    play.pos.z += play.alvo.z * fraction;
+
 
                 }
     /*

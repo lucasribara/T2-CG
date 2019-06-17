@@ -266,8 +266,6 @@ bool testaColisaoObjetoEstatico()
            play.pos.z+(play.alvo.z*0.1f) > objs[i].min_z-colisionThrehsold &&
             play.pos.z+(play.alvo.z*0.1f) < objs[i].max_z+colisionThrehsold)
         {
-            //if()
-            cout << "COLISAO" << endl;
             return true;
         }
     }
@@ -283,7 +281,6 @@ bool testaColisaoLimites()
        play.pos.z+(play.alvo.z*0.1f) > (largura*2.0f)-1.0f - threshold ||
        play.pos.z+(play.alvo.z*0.1f) < -1.0f + threshold)
     {
-        cout << "LIMITES" << endl;
         return true;
     }
     return false;
@@ -300,7 +297,6 @@ bool testaColisaoCombustivel()
            play.pos.z > capsulas[i].min_z - threshold &&
            play.pos.z < capsulas[i].max_z + threshold)
         {
-            cout << "FUEL" << endl;
             capsulas[i].visivel = false;
             play.fuelLevel = 100.0f;
             return true;
@@ -1134,7 +1130,6 @@ void keyboard ( unsigned char key, int x, int y )
         //play.alvo.z = -cos(angleY);
         break;
     default:
-            cout << key;
       break;
   }
 }
@@ -1167,15 +1162,6 @@ void arrow_keys ( int a_keys, int x, int y )
 
 
                 }
-    /*
-                cout << "#############" << endl;
-                cout << "POS" << endl;
-                cout << play.pos.x << endl;
-                cout << play.pos.z << endl;
-                cout << "ALVO" << endl;
-                cout << play.alvo.x << endl;
-                cout << play.alvo.z << endl;
-                cout << "#############" << endl;*/
 
             }
 			break;

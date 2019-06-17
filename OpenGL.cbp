@@ -80,14 +80,11 @@
 		</Compiler>
 		<Unit filename="ImageClass.cpp" />
 		<Unit filename="ImageClass.h" />
-		<Unit filename="Jogo.cpp">
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
+		<Unit filename="Jogo.cpp" />
 		<Unit filename="SOIL/SOIL.cpp" />
 		<Unit filename="SOIL/image_DXT.cpp" />
 		<Unit filename="SOIL/image_helper.cpp" />
 		<Unit filename="SOIL/stb_image_aug.cpp" />
-		<Unit filename="Textura.cpp" />
 		<Unit filename="TextureClass.cpp" />
 		<Extensions>
 			<code_completion />

@@ -70,9 +70,18 @@ typedef struct Player
     float fuelLevel;
 } Player;
 
+typedef struct Tiro
+{
+    Ponto pos;
+    Ponto alvo;
+    bool visivel;
+    float max_x, min_x, max_z, min_z;
+} Tiro;
+
 ObjetoEstatico *objs;
 Inimigo *inimigos;
 Fuel *capsulas;
+Tiro *tiros;
 Player play = {{0.0f, -0.4f, 5.0f}, {0.0f, 0.0f, -1.0f}, 0.5f, 5.5f, -0.5f, 4.5f, 100.0f, true};
 
 float colisionThrehsold = 0.2f;
@@ -90,6 +99,8 @@ GLuint TexBuilding, TexHouse, TexGrass, TexDirt, TexFuel, TexEnemy;
 float posX=0, posY=0, posZ=0;
 float mov = 3;
 float step= 0.1;
+float velTiro = 0.01f;
+float velInimigo = 0.005f;
 
 int mapMatrix[10][10];
 // angle of rotation for the camera direction
@@ -119,58 +130,6 @@ typedef struct // Struct para armazenar um triângulo
 
 TTriangle TriObj[14000]; // Vetor que armazena um objeto de até 6000 faces
 int NFacesTriObj; // Variável que armazena o número real de faves do objeto
-
-// *********************************************************************
-//   DESCRICAO DO FORMATO ".TRI"
-// *********************************************************************
-
-/*
- A primeira linha do arquivo contém o número de triângulos que forma o objeto
- As demais linhas descrevemas os triângulos:
- x1 y1 z1 x2 y2 z2 x3 y3 z3
- onde
- x1 y1 z1 : primeiro vértice do triângulo
- x2 y2 z2 : segundo vértice do triângulo
- x3 y3 z3 : terceiro vértice do triângulo
- Um exemplo com dois triângulos:
- 2
- 0 0 10 10 0 10 5 10 10
- 10 0 10 20 0 10 15 10 10
-
- */
-// **********************************************************************
-// void LeObjeto(char *Nome)
-//
-//
-// **********************************************************************
-void LeObjeto (char *Nome, TTriangle Objeto[], int &NFaces)
-{
-    // ***************
-    // Exercicio
-    //      complete esta rotina fazendo a leitura do objeto
-    // ***************
-
-    ifstream arq;
-    arq.open(Nome, ios::in);
-    arq >> NFaces;
-    float x,y,z;
-    for (int i=0;i<NFaces;i++)
-    {
-        arq >> x >> y >> z; // Vertice 1
-        //cout << x << " , " << y << " , " << z << endl;
-        Objeto[i].P1.Set(x,y,z);
-        arq >> x >> y >> z; // Vertice 2
-        //cout << x << " , " << y << " , " << z << endl;
-        Objeto[i].P2.Set(x,y,z);
-        arq >> x >> y >> z; // Vertice 3
-        //cout << x << " , " << y << " , " << z << endl;
-        Objeto[i].P3.Set(x,y,z);
-
-    }
-
-
-
-}
 
 Ponto vetorUnitario(Ponto p0, Ponto p1)
 {
@@ -218,6 +177,59 @@ Ponto calculaNormal(Ponto p1, Ponto p2, Ponto p3)
     return res;
 }
 
+// *********************************************************************
+//   DESCRICAO DO FORMATO ".TRI"
+// *********************************************************************
+
+/*
+ A primeira linha do arquivo contém o número de triângulos que forma o objeto
+ As demais linhas descrevemas os triângulos:
+ x1 y1 z1 x2 y2 z2 x3 y3 z3
+ onde
+ x1 y1 z1 : primeiro vértice do triângulo
+ x2 y2 z2 : segundo vértice do triângulo
+ x3 y3 z3 : terceiro vértice do triângulo
+ Um exemplo com dois triângulos:
+ 2
+ 0 0 10 10 0 10 5 10 10
+ 10 0 10 20 0 10 15 10 10
+
+
+
+ */
+// **********************************************************************
+// void LeObjeto(char *Nome)
+//
+//
+// **********************************************************************
+void LeObjeto (char *Nome, TTriangle Objeto[], int &NFaces)
+{
+    // ***************
+    // Exercicio
+    //      complete esta rotina fazendo a leitura do objeto
+    // ***************
+
+    ifstream arq;
+    arq.open(Nome, ios::in);
+    arq >> NFaces;
+    float x,y,z;
+    for (int i=0;i<NFaces;i++)
+    {
+        arq >> x >> y >> z; // Vertice 1
+        //cout << x << " , " << y << " , " << z << endl;
+        Objeto[i].P1.Set(x,y,z);
+        arq >> x >> y >> z; // Vertice 2
+        //cout << x << " , " << y << " , " << z << endl;
+        Objeto[i].P2.Set(x,y,z);
+        arq >> x >> y >> z; // Vertice 3
+        //cout << x << " , " << y << " , " << z << endl;
+        Objeto[i].P3.Set(x,y,z);
+
+    }
+
+
+
+}
 // **********************************************************************
 // void ExibeObjeto (TTriangle **Objeto)
 //
@@ -262,6 +274,76 @@ bool testaColisaoObjetoEstatico()
     return false;
 }
 
+bool testaColisaoLimites()
+{
+    float threshold = 0.5f;
+
+    if(play.pos.x+(play.alvo.x*0.1f) > (altura*2.0f)-1.0f - threshold ||
+       play.pos.x+(play.alvo.x*0.1f) < -1.0f + threshold||
+       play.pos.z+(play.alvo.z*0.1f) > (largura*2.0f)-1.0f - threshold ||
+       play.pos.z+(play.alvo.z*0.1f) < -1.0f + threshold)
+    {
+        cout << "LIMITES" << endl;
+        return true;
+    }
+    return false;
+}
+
+bool testaColisaoCombustivel()
+{
+    int i;
+    float threshold = 0.2f;
+    for(i = 0; i < nCapsulas; i++)
+    {
+        if(play.pos.x > capsulas[i].min_x - threshold &&
+           play.pos.x < capsulas[i].max_x + threshold &&
+           play.pos.z > capsulas[i].min_z - threshold &&
+           play.pos.z < capsulas[i].max_z + threshold)
+        {
+            cout << "FUEL" << endl;
+            capsulas[i].visivel = false;
+            play.fuelLevel = 100.0f;
+            return true;
+        }
+    }
+}
+
+bool testaColisaoInimigos()
+{
+    int i;
+    float threshold = 0.2f;
+    for(i = 0; i < nInimigos; i++)
+    {
+        if(play.pos.x > inimigos[i].min_x - threshold &&
+           play.pos.x < inimigos[i].max_x + threshold &&
+           play.pos.z > inimigos[i].min_z - threshold &&
+           play.pos.z < inimigos[i].max_z + threshold)
+        {
+            play.vivo = false;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool testaColisaoTiroPlayer()
+{
+    int i;
+    float threshold = 0.2f;
+    for(i = 0; i < nInimigos; i++)
+    {
+        if(play.pos.x > tiros[i].min_x - threshold &&
+           play.pos.x < tiros[i].max_x + threshold &&
+           play.pos.z > tiros[i].min_z - threshold &&
+           play.pos.z < tiros[i].max_z + threshold)
+        {
+            play.vivo = false;
+            return true;
+        }
+    }
+    return false;
+}
+
 
 // **********************************************************************
 //  void initTexture(void)
@@ -272,7 +354,7 @@ void initTexture (void)
 {
     TexBuilding = LoadTexture ("Build.png");
     TexHouse = LoadTexture ("House.png");
-    TexGrass = LoadTexture("Teste.png");
+    TexGrass = LoadTexture("Grass.png");
     TexDirt = LoadTexture("Dirt.png");
     TexFuel = LoadTexture("Fuel.png");
     TexEnemy = LoadTexture("Enemy.png");
@@ -388,6 +470,7 @@ void armazenaObjetos()
     inimigos = new Inimigo[enemyCount];
     capsulas = new Fuel[fuelCount];
     objs = new ObjetoEstatico[objCount];
+    tiros = new Tiro[enemyCount];
 
     int enemyCount2 = 0;
     int fuelCount2 = 0;
@@ -439,6 +522,7 @@ void armazenaObjetos()
                 capsulas[fuelCount2].max_z = capsulas[fuelCount2].pos.z + 0.2f;
                 capsulas[fuelCount2].min_z = capsulas[fuelCount2].pos.z - 0.2f;
                 capsulas[fuelCount2].visivel = true;
+                fuelCount2++;
             }
             if(mapMatrix[i][j] == 6 && enemyCount2 < enemyCount)
             {
@@ -449,10 +533,91 @@ void armazenaObjetos()
                 inimigos[enemyCount2].min_x = inimigos[enemyCount2].pos.x - 0.5f;
                 inimigos[enemyCount2].max_z = inimigos[enemyCount2].pos.z + 0.5f;
                 inimigos[enemyCount2].min_z = inimigos[enemyCount2].pos.z - 0.5f;
+                enemyCount2++;
             }
         }
     }
 }
+
+bool testaColisaoTiroLimite(int j)
+{
+    float threshold = 0.2f;
+
+    if(tiros[j].pos.x+(tiros[j].alvo.x*0.1f) > (altura*2.0f)-1.0f - threshold ||
+       tiros[j].pos.x+(tiros[j].alvo.x*0.1f) < -1.0f + threshold||
+       tiros[j].pos.z+(tiros[j].alvo.z*0.1f) > (largura*2.0f)-1.0f - threshold ||
+       tiros[j].pos.z+(tiros[j].alvo.z*0.1f) < -1.0f + threshold)
+    {
+        tiros[j].visivel = false;
+        return true;
+    }
+    return false;
+}
+
+bool testaColisaoTiroObjeto(int j)
+{
+    float threshold = 0.2f;
+    int i;
+    for(i = 0; i < nObjs; i++)
+    {
+        if(tiros[j].pos.x+(tiros[j].alvo.x*0.1f) > objs[i].min_x-threshold &&
+           tiros[j].pos.x+(tiros[j].alvo.x * 0.1f) < objs[i].max_x+threshold &&
+           tiros[j].pos.z+(tiros[j].alvo.z*0.1f) > objs[i].min_z-threshold &&
+            tiros[j].pos.z+(tiros[j].alvo.z*0.1f) < objs[i].max_z+threshold)
+        {
+            tiros[j].visivel = false;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool testaColisaoTiroInimigo(int j)
+{
+    int i;
+    float threshold = 0.2f;
+    for(i = 0; i < nInimigos; i++)
+    {
+        if(tiros[j].pos.x > inimigos[i].min_x - threshold &&
+           tiros[j].pos.x < inimigos[i].max_x + threshold &&
+           tiros[j].pos.z > inimigos[i].min_z - threshold &&
+           tiros[j].pos.z < inimigos[i].max_z + threshold)
+        {
+            tiros[j].visivel = false;
+            return true;
+        }
+    }
+    return false;
+}
+
+
+void atiraInimigo(int i)
+{
+    if(tiros[i].visivel == true)
+    {
+        testaColisaoTiroLimite(i);
+        testaColisaoTiroObjeto(i);
+        tiros[i].pos.x += tiros[i].alvo.x * velTiro;
+        tiros[i].pos.z += tiros[i].alvo.z * velTiro;
+        tiros[i].max_x = tiros[i].pos.x + 0.1f;
+        tiros[i].min_x = tiros[i].pos.x - 0.1f;
+        tiros[i].max_z = tiros[i].pos.z + 0.1f;
+        tiros[i].min_z = tiros[i].pos.z - 0.1f;
+    }
+    else
+    {
+        tiros[i].pos.x = inimigos[i].pos.x;
+        tiros[i].pos.y = 0.5f;
+        tiros[i].pos.z = inimigos[i].pos.z;
+        tiros[i].max_x = tiros[i].pos.x + 0.1f;
+        tiros[i].min_x = tiros[i].pos.x - 0.1f;
+        tiros[i].max_z = tiros[i].pos.z + 0.1f;
+        tiros[i].min_z = tiros[i].pos.z - 0.1f;
+        tiros[i].alvo = vetorUnitario(inimigos[i].pos, play.pos);
+        tiros[i].visivel = true;
+    }
+}
+
 
 
 // **********************************************************************
@@ -659,7 +824,9 @@ void desenhaTerreno()
         {
             if(mapMatrix[i][j] == 3) //terra
             {
+                glEnable(GL_TEXTURE_2D);
                 glPushMatrix();
+                glColor3f(1.0f,1.0f,1.0f);  //
                 glTranslatef (i*2.0f, -1.0f, j*2.0f);
                 glBindTexture (GL_TEXTURE_2D, TexDirt);
                 glScalef(1.0f, 0.01f, 1.0f);
@@ -668,7 +835,9 @@ void desenhaTerreno()
             }
             else //grama
             {
+                glEnable(GL_TEXTURE_2D);
                 glPushMatrix();
+                glColor3f(1.0f,1.0f,1.0f);  //
                 glTranslatef (i*2.0f, -1.0f, j*2.0f);
                 glBindTexture (GL_TEXTURE_2D, TexGrass);
                 glScalef(1.0f, 0.01f, 1.0f);
@@ -681,27 +850,33 @@ void desenhaTerreno()
 
 void desenhaObjetoEstatico(ObjetoEstatico obj)
 {
-    if(obj.tipo == 0) //casa ou predio
+    if(obj.tipo == 0) //casa
     {
+        glEnable(GL_TEXTURE_2D);
         glPushMatrix();
+        glColor3f(1.0f,1.0f,1.0f);  //
         glTranslatef (obj.pos.x, obj.pos.y, obj.pos.z);
         glBindTexture (GL_TEXTURE_2D, TexHouse);
         glScalef(obj.scale.x, obj.scale.y, obj.scale.z);
         desenhaComTexturaEstendida();
         glPopMatrix();
     }
-    else if(obj.tipo == 1)
+    else if(obj.tipo == 1) //predio
     {
+        glEnable(GL_TEXTURE_2D);
         glPushMatrix();
+        glColor3f(1.0f,1.0f,1.0f);  //
         glTranslatef (obj.pos.x, obj.pos.y, obj.pos.z);
         glBindTexture (GL_TEXTURE_2D, TexBuilding);
         glScalef(obj.scale.x, obj.scale.y, obj.scale.z);
         desenhaComTexturaEstendida();
         glPopMatrix();
     }
-    else
+    else //cacto
     {
+        glDisable(GL_TEXTURE_2D);
         glPushMatrix();
+        glColor3f(0.0f,50.0f,0.0f);
 		glTranslatef (obj.pos.x, obj.pos.y, obj.pos.z);
         glScalef(obj.scale.x, obj.scale.x, obj.scale.x);
         ExibeObjeto(TriObj,NFacesTriObj);
@@ -714,7 +889,9 @@ void desenhaCombustivel(Fuel f)
 {
     if(f.visivel == true)
     {
+        glEnable(GL_TEXTURE_2D);
         glPushMatrix();
+        glColor3f(1.0f,1.0f,1.0f);  //
         glBindTexture (GL_TEXTURE_2D, TexFuel);
         glTranslatef (f.pos.x, f.pos.y, f.pos.z);
         glScalef(f.scale.x, f.scale.x, f.scale.x);
@@ -725,15 +902,39 @@ void desenhaCombustivel(Fuel f)
     }
 }
 
+void desenhaTiro(Tiro t)
+{
+    if(t.visivel == true)
+    {
+        glDisable(GL_TEXTURE_2D);
+        glPushMatrix();
+        glColor3f(1.0f,0.0f,0.0f);
+        glTranslatef (t.pos.x, t.pos.y, t.pos.z);
+        glScalef(0.1f, 0.1f, 0.1f);
+        glTranslatef(0.0f, -8.5f, 0.0f);
+        desenhaComTexturaReplicada();
+        glPopMatrix();
+    }
+}
+
 void desenhaInimigo(Inimigo i)
 {
+    glEnable(GL_TEXTURE_2D);
     glPushMatrix();
+    glColor3f(1.0f,1.0f,1.0f);  //
     glBindTexture (GL_TEXTURE_2D, TexEnemy);
     glTranslatef (i.pos.x, i.pos.y, i.pos.z);
     glScalef(i.scale.x, i.scale.x, i.scale.x);
     glTranslatef(0.0f, 0.0f, 0.0f);
     desenhaComTexturaReplicada();
     glPopMatrix();
+}
+
+void andaInimigo(int i)
+{
+    inimigos[i].alvo = vetorUnitario(inimigos[i].pos, play.pos);
+    inimigos[i].pos.x += inimigos[i].alvo.x * velInimigo;
+    inimigos[i].pos.z += inimigos[i].alvo.z * velInimigo;
 }
 
 // **********************************************************************
@@ -743,8 +944,7 @@ void desenhaInimigo(Inimigo i)
 // **********************************************************************
 void display( void )
 {
-
-	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
     glLoadIdentity();
 	DefineLuz();
@@ -753,42 +953,110 @@ void display( void )
 
 	glMatrixMode(GL_MODELVIEW);
 
-	desenhaTerreno();
-	int i, j;
-
-	for (i =0; i<altura; i++)
+	if(play.vivo == true)
     {
-        for (j=0; j <largura; j++)
+        glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+        glLoadIdentity();
+        DefineLuz();
+
+        PosicUser();
+
+        glMatrixMode(GL_MODELVIEW);
+        desenhaTerreno();
+        int i, j;
+
+        for (i =0; i<altura; i++)
         {
-            float transX = float(i)*2.0f;
-            float transZ = float(j)*2.0f;
-            /*glPushMatrix();
-                glTranslatef ( transX, -2.0f, transZ );
-                //glRotatef(AngY,0,1,0);
-                //glColor3f(0.5f,0.0f,0.0f); // Vermelho
-                glBindTexture (GL_TEXTURE_2D, TexGrass);
-                glScalef(1.0f, 0.01f, 1.0f);
-                DesenhaCubo();
-            glPopMatrix();*/
+            for (j=0; j <largura; j++)
+            {
+                float transX = float(i)*2.0f;
+                float transZ = float(j)*2.0f;
+                /*glPushMatrix();
+                    glTranslatef ( transX, -2.0f, transZ );
+                    //glRotatef(AngY,0,1,0);
+                    //glColor3f(0.5f,0.0f,0.0f); // Vermelho
+                    glBindTexture (GL_TEXTURE_2D, TexGrass);
+                    glScalef(1.0f, 0.01f, 1.0f);
+                    DesenhaCubo();
+                glPopMatrix();*/
+            }
         }
-    }
 
-    for(i = 0; i < nObjs; i++)
+        for(i = 0; i < nObjs; i++)
+        {
+            desenhaObjetoEstatico(objs[i]);
+        }
+
+        for(i = 0; i < nCapsulas; i++)
+        {
+            desenhaCombustivel(capsulas[i]);
+        }
+
+        for(i = 0; i < nInimigos; i++)
+        {
+            desenhaInimigo(inimigos[i]);
+            desenhaTiro(tiros[i]);
+        }
+
+        testaColisaoTiroPlayer();
+
+        char* buf = new char[10];
+        sprintf(buf,"%.2f", play.fuelLevel);
+        glColor3f( 255, 0, 0 );
+
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        gluOrtho2D(0.0, 50.0, 0.0, 50.0);
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+        glRasterPos2i(45, 48);
+        void * font = GLUT_BITMAP_9_BY_15;
+        for (i = 0; i < 10; i++)
+        {
+        glColor3d(1.0, 0.0, 0.0);
+        glutBitmapCharacter(font, buf[i]);
+        }
+        glMatrixMode(GL_MODELVIEW);
+        glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+
+        glFlush();
+    }
+    else
     {
-        desenhaObjetoEstatico(objs[i]);
+        int i;
+
+        char* buf = new char[10];
+        buf = "MORREU!";
+        //sprintf(buf,"%.2f", play.fuelLevel);
+        glColor3f( 255, 0, 0 );
+
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        gluOrtho2D(0.0, 50.0, 0.0, 50.0);
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+        glRasterPos2i(23, 25);
+        void * font = GLUT_BITMAP_9_BY_15;
+        for (i = 0; i < 7; i++)
+        {
+            glColor3d(1.0, 0.0, 0.0);
+            glutBitmapCharacter(font, buf[i]);
+        }
+        glMatrixMode(GL_MODELVIEW);
+        glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
     }
 
-    for(i = 0; i < nCapsulas; i++)
-    {
-        desenhaCombustivel(capsulas[i]);
-    }
 
-    for(i = 0; i < nInimigos; i++)
-    {
-        desenhaInimigo(inimigos[i]);
-    }
-
-	glutSwapBuffers();
+    glutSwapBuffers();
 }
 
 // **********************************************************************
@@ -823,6 +1091,12 @@ void animate()
     AngY+=0.5f;
     // Sa;va o tempo para o pr—ximo ciclo de rendering
     last_idle_time = time_now;
+    int i;
+    for(i = 0; i < nInimigos; i++)
+    {
+        atiraInimigo(i);
+        andaInimigo(i);
+    }
 
         //if  (GetAsyncKeyState(32) & 0x8000) != 0)
           //  cout << "Espaco Pressionado" << endl;
@@ -838,7 +1112,6 @@ void animate()
 // **********************************************************************
 void keyboard ( unsigned char key, int x, int y )
 {
-    float yrotrad;
 	switch ( key )
 	{
     case 27:        // Termina o programa qdo
@@ -875,15 +1148,23 @@ void arrow_keys ( int a_keys, int x, int y )
 		case GLUT_KEY_UP:
 			if(true)
             {
+                testaColisaoInimigos();
+                testaColisaoCombustivel();
                 angleY = 0.0f;
                 play.alvo.y = 0.0f;
-                objCol = testaColisaoObjetoEstatico();
-                if(objCol == false)
+                if(testaColisaoObjetoEstatico() == false && testaColisaoLimites() == false)
                 {
+                    play.fuelLevel -= 0.5f;
+                    if(play.fuelLevel <= 0.0f)
+                    {
+                        play.vivo = false;
+                        break;
+                    }
                     play.pos.x += play.alvo.x * fraction;
                     play.pos.z += play.alvo.z * fraction;
-                }
 
+                }
+    /*
                 cout << "#############" << endl;
                 cout << "POS" << endl;
                 cout << play.pos.x << endl;
@@ -891,7 +1172,7 @@ void arrow_keys ( int a_keys, int x, int y )
                 cout << "ALVO" << endl;
                 cout << play.alvo.x << endl;
                 cout << play.alvo.z << endl;
-                cout << "#############" << endl;
+                cout << "#############" << endl;*/
 
             }
 			break;

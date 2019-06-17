@@ -37,17 +37,56 @@ typedef struct Ponto
     float x,y,z;
 } Ponto;
 
-Ponto alvo = {0.0f, 0.0f, -1.0f};
-Ponto obs = {0.0f, -0.4f, 5.0f};
-Ponto novoAlvo = alvo;
+typedef struct ObjetoEstatico //casa ou predio
+{
+    Ponto pos;
+    Ponto scale;
+    float max_x, max_z, min_x, min_z;
+    int tipo;
+} ObjetoEstatico;
+
+typedef struct Inimigo
+{
+    Ponto pos;
+    Ponto scale;
+    Ponto alvo;
+    float max_x, max_z, min_x, min_z;
+} Inimigo;
+
+typedef struct Fuel
+{
+    Ponto pos;
+    Ponto scale;
+    float max_x, max_z, min_x, min_z;
+    bool visivel;
+} Fuel;
+
+typedef struct Player
+{
+    Ponto pos;
+    Ponto alvo;
+    float max_x, max_z, min_x, min_z;
+    bool vivo;
+    float fuelLevel;
+} Player;
+
+ObjetoEstatico *objs;
+Inimigo *inimigos;
+Fuel *capsulas;
+Player play = {{0.0f, -0.4f, 5.0f}, {0.0f, 0.0f, -1.0f}, 0.5f, 5.5f, -0.5f, 4.5f, 100.0f, true};
+
+float colisionThrehsold = 0.2f;
+
+int nObjs;
+int nInimigos;
+int nCapsulas;
 
 ifstream arquivo;
 
 int altura, largura;
 
 GLfloat AspectRatio, AngY=0;
-GLuint TEX1, TEX2, TEX3, TEXDirt, TEXFuel;
-float alvoNovoX=0, alvoNovoY=0, alvoNovoZ=-8;
+GLuint TexBuilding, TexHouse, TexGrass, TexDirt, TexFuel, TexEnemy;
 float posX=0, posY=0, posZ=0;
 float mov = 3;
 float step= 0.1;
@@ -132,6 +171,52 @@ void LeObjeto (char *Nome, TTriangle Objeto[], int &NFaces)
 
 }
 
+Ponto vetorUnitario(Ponto p0, Ponto p1)
+{
+    Ponto res;
+    Ponto vetor;
+    vetor = {p1.x - p0.x, p1.y - p0.y, p1.z - p0.z};
+    float modulo = sqrt(pow(vetor.x, 2)+pow(vetor.y, 2)+pow(vetor.z, 2));
+    if(modulo == 0) return {0.0f, 0.0f, 0.0f};
+    res = {vetor.x/modulo, vetor.y/modulo, vetor.z/modulo};
+    return res;
+}
+
+Ponto vetorUnitario(Ponto vetor)
+{
+    Ponto res;
+    float modulo = sqrt(pow(vetor.x, 2)+pow(vetor.y, 2)+pow(vetor.z, 2));
+    if(modulo == 0) return {0.0f, 0.0f, 0.0f};
+    res = {vetor.x/modulo, vetor.y/modulo, vetor.z/modulo};
+    return res;
+}
+
+Ponto produtoVetorial(Ponto v1, Ponto v2)
+{
+    Ponto res;
+    res.x = (v1.y * v2.z) - (v1.z * v2.y);
+    res.y = (v1.z * v2.x) - (v1.x * v2.z);
+    res.z = (v1.x * v2.y) - (v1.y * v2.x);
+    return res;
+}
+
+Ponto calculaNormal(Ponto p1, Ponto p2, Ponto p3)
+{
+    Ponto v1, v2;
+
+    v1.x = p1.x - p2.x;
+    v1.y = p1.y - p2.y;
+    v1.z = p1.z - p2.z;
+
+    v2.x = p2.x - p3.x;
+    v2.y = p2.y - p3.y;
+    v2.z = p2.z - p3.z;
+
+    Ponto pv = produtoVetorial(v1, v2);
+    Ponto res = vetorUnitario(pv);
+    return res;
+}
+
 // **********************************************************************
 // void ExibeObjeto (TTriangle **Objeto)
 //
@@ -141,9 +226,14 @@ void ExibeObjeto (TTriangle *Objeto, int NFaces)
 {
     glBegin ( GL_TRIANGLES );
 		// Front Face
-		//glNormal3f(0,0,1);
+		//
 		for(int i=0; i<NFaces; i++)
         {
+            Ponto p1 = {Objeto[i].P1.X, Objeto[i].P1.Y, Objeto[i].P1.Z};
+            Ponto p2 = {Objeto[i].P2.X, Objeto[i].P2.Y, Objeto[i].P2.Z};
+            Ponto p3 = {Objeto[i].P3.X, Objeto[i].P3.Y, Objeto[i].P3.Z};
+            Ponto n = calculaNormal(p1, p2, p3);
+            glNormal3f(n.x, n.y, n.z);
             glVertex3f(Objeto[i].P1.X, Objeto[i].P1.Y,  Objeto[i].P1.Z);
             glVertex3f(Objeto[i].P2.X, Objeto[i].P2.Y,  Objeto[i].P2.Z);
             glVertex3f(Objeto[i].P3.X, Objeto[i].P3.Y,  Objeto[i].P3.Z);
@@ -151,6 +241,24 @@ void ExibeObjeto (TTriangle *Objeto, int NFaces)
 	glEnd();
 
 
+}
+
+bool testaColisaoObjetoEstatico()
+{
+    int i;
+    for(i = 0; i < nObjs; i++)
+    {
+        if(play.pos.x > objs[i].min_x-colisionThrehsold &&
+           play.pos.x < objs[i].max_x+colisionThrehsold &&
+           play.pos.z > objs[i].min_z-colisionThrehsold &&
+            play.pos.z < objs[i].max_z+colisionThrehsold)
+        {
+            //if()
+            cout << "COLISAO" << endl;
+            return true;
+        }
+    }
+    return false;
 }
 
 
@@ -161,11 +269,12 @@ void ExibeObjeto (TTriangle *Objeto, int NFaces)
 // **********************************************************************
 void initTexture (void)
 {
-    TEX1 = LoadTexture ("Build.png");
-    TEX2 = LoadTexture ("House.png");
-    TEX3 = LoadTexture("Grass.png");
-    TEXDirt = LoadTexture("Dirt.png");
-    TEXFuel = LoadTexture("Fuel.png");
+    TexBuilding = LoadTexture ("Build.png");
+    TexHouse = LoadTexture ("House.png");
+    TexGrass = LoadTexture("Teste.png");
+    TexDirt = LoadTexture("Dirt.png");
+    TexFuel = LoadTexture("Fuel.png");
+    TexEnemy = LoadTexture("Enemy.png");
 }
 
 
@@ -239,6 +348,112 @@ void leMapa()
 }
 
 
+
+void armazenaObjetos()
+{
+    int i, j, obj, objCount = 0, enemyCount = 0, fuelCount = 0;
+    for(i = 0; i < altura; i++)
+    {
+        for(j = 0; j < largura; j++)
+        {
+            if(mapMatrix[i][j] == 1 || mapMatrix[i][j] == 2 || mapMatrix[i][j] == 4)
+            {
+                objCount++;
+            }
+            if(mapMatrix[i][j] == 5)
+            {
+                fuelCount++;
+            }
+            if(mapMatrix[i][j] == 6)
+            {
+                enemyCount++;
+            }
+            if(mapMatrix[i][j] == 7)
+            {
+                play.pos.x = i*2;
+                play.pos.z = j*2;
+                play.max_x = play.pos.x + 0.5f;
+                play.min_x = play.pos.x - 0.5f;
+                play.max_z = play.pos.z + 0.5f;
+                play.min_z = play.pos.z - 0.5f;
+                play.fuelLevel = 100.0f;
+                play.vivo = true;
+            }
+        }
+    }
+    nObjs = objCount;
+    nInimigos = enemyCount;
+    nCapsulas = fuelCount;
+    inimigos = new Inimigo[enemyCount];
+    capsulas = new Fuel[fuelCount];
+    objs = new ObjetoEstatico[objCount];
+
+    int enemyCount2 = 0;
+    int fuelCount2 = 0;
+    int objCount2 = 0;
+
+    for(i = 0; i < altura; i++)
+    {
+        for(j = 0; j < largura; j++)
+        {
+            if(mapMatrix[i][j] == 1 && objCount2 < objCount)
+            {
+                objs[objCount2].pos = {i*2.0f, 0.0f, j*2.0f};
+                objs[objCount2].scale = {1.0f, 1.0f, 1.0f};
+                objs[objCount2].max_x = objs[objCount2].pos.x + 1.0f;
+                objs[objCount2].min_x = objs[objCount2].pos.x - 1.0f;
+                objs[objCount2].max_z = objs[objCount2].pos.z + 1.0f;
+                objs[objCount2].min_z = objs[objCount2].pos.z - 1.0f;
+                objs[objCount2].tipo = 0;
+                objCount2++;
+            }
+            if(mapMatrix[i][j] == 2 && objCount2 < objCount)
+            {
+                objs[objCount2].pos = {i*2.0f, 2.0f, j*2.0f};
+                objs[objCount2].scale = {1.0f, 3.0f, 1.0f};
+                objs[objCount2].max_x = objs[objCount2].pos.x + 1.0f;
+                objs[objCount2].min_x = objs[objCount2].pos.x - 1.0f;
+                objs[objCount2].max_z = objs[objCount2].pos.z + 1.0f;
+                objs[objCount2].min_z = objs[objCount2].pos.z - 1.0f;
+                objs[objCount2].tipo = 1;
+                objCount2++;
+            }
+            if(mapMatrix[i][j] == 4 && objCount2 < objCount)
+            {
+                objs[objCount2].pos = {i*2.0f, -0.9f, j*2.0f};
+                objs[objCount2].scale = {0.1f, 0.1f, 0.1f};
+                objs[objCount2].max_x = objs[objCount2].pos.x + 0.1f;
+                objs[objCount2].min_x = objs[objCount2].pos.x - 0.1f;
+                objs[objCount2].max_z = objs[objCount2].pos.z + 0.1f;
+                objs[objCount2].min_z = objs[objCount2].pos.z - 0.1f;
+                objs[objCount2].tipo = 2;
+                objCount2++;
+            }
+            if(mapMatrix[i][j] == 5 && fuelCount2 < fuelCount)
+            {
+                capsulas[fuelCount2].pos = {i*2.0f, 0.0f, j*2.0f};
+                capsulas[fuelCount2].scale = {0.2f, 0.2f, 0.2f};
+                capsulas[fuelCount2].max_x = capsulas[fuelCount2].pos.x + 0.2f;
+                capsulas[fuelCount2].min_x = capsulas[fuelCount2].pos.x - 0.2f;
+                capsulas[fuelCount2].max_z = capsulas[fuelCount2].pos.z + 0.2f;
+                capsulas[fuelCount2].min_z = capsulas[fuelCount2].pos.z - 0.2f;
+                capsulas[fuelCount2].visivel = true;
+            }
+            if(mapMatrix[i][j] == 6 && enemyCount2 < enemyCount)
+            {
+                inimigos[enemyCount2].pos = {i*2.0f, -0.5f, j*2.0f};
+                inimigos[enemyCount2].scale = {0.5f, 0.5f, 0.5f};
+                inimigos[enemyCount2].alvo = vetorUnitario(inimigos[enemyCount2].pos, play.pos);
+                inimigos[enemyCount2].max_x = inimigos[enemyCount2].pos.x + 0.5f;
+                inimigos[enemyCount2].min_x = inimigos[enemyCount2].pos.x - 0.5f;
+                inimigos[enemyCount2].max_z = inimigos[enemyCount2].pos.z + 0.5f;
+                inimigos[enemyCount2].min_z = inimigos[enemyCount2].pos.z - 0.5f;
+            }
+        }
+    }
+}
+
+
 // **********************************************************************
 //  void init(void)
 //		Inicializa os parâmetros globais de OpenGL
@@ -246,9 +461,10 @@ void leMapa()
 // **********************************************************************
 void init(void)
 {
-	glClearColor(0.0f, 191.0f, 255.0f, 1.0f); // Fundo de tela preto
+	glClearColor(0.0f, 191.0f, 255.0f, 1.0f); // Fundo de tela azul
 
 	leMapa();
+	armazenaObjetos();
 
 	glShadeModel(GL_SMOOTH);
 	glColorMaterial ( GL_FRONT, GL_AMBIENT_AND_DIFFUSE );
@@ -279,8 +495,8 @@ void PosicUser()
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	gluLookAt(obs.x, obs.y, obs.z,
-		      obs.x+alvo.x,obs.y+alvo.y,obs.z+alvo.z,
+	gluLookAt(play.pos.x, play.pos.y, play.pos.z,
+		      play.pos.x+play.alvo.x,play.pos.y+play.alvo.y,play.pos.z+play.alvo.z,
 			  0.0f,1.0f,0.0f);
 
 }
@@ -308,7 +524,7 @@ void reshape( int w, int h )
 	PosicUser();
 
 }
-void DesenhaCombustivel()
+void desenhaComTexturaReplicada()
 {
     glBegin ( GL_QUADS );
     // Front Face
@@ -372,7 +588,7 @@ void DesenhaCombustivel()
 //
 //
 // **********************************************************************
-void DesenhaCubo ()
+void desenhaComTexturaEstendida ()
 {
     glBegin ( GL_QUADS );
     // Front Face
@@ -433,73 +649,90 @@ void DesenhaCubo ()
 
 }
 
-void CriaObjetoMapa(float transX, float transZ, int obj)
+void desenhaTerreno()
 {
-    switch ( obj )
+    int i, j;
+    for(i = 0; i < altura; i++)
     {
-    case 0:
-        glPushMatrix();
-        glTranslatef ( transX, -1.0f, transZ );
-        glBindTexture (GL_TEXTURE_2D, TEX3);
-        glScalef(1.0f, 0.01f, 1.0f);
-        DesenhaCubo();
-        glPopMatrix();
-        break;
-    case 1:
-        glPushMatrix();
-        glTranslatef ( transX, 0.0f, transZ );
-        //glRotatef(AngY,0,1,0);
-        //glColor3f(0.5f,0.0f,0.0f); // Vermelho
-        glBindTexture (GL_TEXTURE_2D, TEX2);
-        DesenhaCubo();
-        glPopMatrix();
-        break;
-    case 2:
-        glPushMatrix();
-        glTranslatef ( transX, 2.0f, transZ );
-        //glRotatef(AngY,0,1,0);
-        //glColor3f(0.5f,0.0f,0.0f); // Vermelho
-        glBindTexture (GL_TEXTURE_2D, TEX1);
-        glScalef(1.0f, 3.0f, 1.0f);
-        DesenhaCubo();
-        glPopMatrix();
-        break;
-    case 3:
-        glPushMatrix();
-        glTranslatef ( transX, -1.0f, transZ );
-        glBindTexture (GL_TEXTURE_2D, TEXDirt);
-        glScalef(1.0f, 0.01f, 1.0f);
-        DesenhaCubo();
-        glPopMatrix();
-        break;
-    case 4:
-        //glPushMatrix();
-        //glTranslatef ( transX, -1.0f, transZ );
-        //glBindTexture (GL_TEXTURE_2D, TEX3);
-        //glScalef(1.0f, 0.01f, 1.0f);
-        //DesenhaCubo();
-        //glPopMatrix();
+        for(j = 0; j < largura; j++)
+        {
+            if(mapMatrix[i][j] == 3) //terra
+            {
+                glPushMatrix();
+                glTranslatef (i*2.0f, -1.0f, j*2.0f);
+                glBindTexture (GL_TEXTURE_2D, TexDirt);
+                glScalef(1.0f, 0.01f, 1.0f);
+                desenhaComTexturaEstendida();
+                glPopMatrix();
+            }
+            else //grama
+            {
+                glPushMatrix();
+                glTranslatef (i*2.0f, -1.0f, j*2.0f);
+                glBindTexture (GL_TEXTURE_2D, TexGrass);
+                glScalef(1.0f, 0.01f, 1.0f);
+                desenhaComTexturaEstendida();
+                glPopMatrix();
+            }
+        }
+    }
+}
 
+void desenhaObjetoEstatico(ObjetoEstatico obj)
+{
+    if(obj.tipo == 0) //casa ou predio
+    {
         glPushMatrix();
-		glTranslatef ( transX, -0.9f, transZ );
-        //glRotatef(AngY,0,1,0);
-		//glColor3f(0.5f,0.0f,0.0f); // Vermelho
-        glScaled(0.1f, 0.1f, 0.1f);
+        glTranslatef (obj.pos.x, obj.pos.y, obj.pos.z);
+        glBindTexture (GL_TEXTURE_2D, TexHouse);
+        glScalef(obj.scale.x, obj.scale.y, obj.scale.z);
+        desenhaComTexturaEstendida();
+        glPopMatrix();
+    }
+    else if(obj.tipo == 1)
+    {
+        glPushMatrix();
+        glTranslatef (obj.pos.x, obj.pos.y, obj.pos.z);
+        glBindTexture (GL_TEXTURE_2D, TexBuilding);
+        glScalef(obj.scale.x, obj.scale.y, obj.scale.z);
+        desenhaComTexturaEstendida();
+        glPopMatrix();
+    }
+    else
+    {
+        glPushMatrix();
+		glTranslatef (obj.pos.x, obj.pos.y, obj.pos.z);
+        glScalef(obj.scale.x, obj.scale.x, obj.scale.x);
         ExibeObjeto(TriObj,NFacesTriObj);
         glPopMatrix();
-        break;
-
     }
-    if(obj != 0)
+
+}
+
+void desenhaCombustivel(Fuel f)
+{
+    if(f.visivel == true)
     {
         glPushMatrix();
-        glTranslatef ( transX, -1.0f, transZ );
-        glBindTexture (GL_TEXTURE_2D, TEX3);
-        glScalef(1.0f, 0.01f, 1.0f);
-        DesenhaCubo();
+        glBindTexture (GL_TEXTURE_2D, TexFuel);
+        glTranslatef (f.pos.x, f.pos.y, f.pos.z);
+        glScalef(f.scale.x, f.scale.x, f.scale.x);
+        glTranslatef(0.0f, -2.8f, 0.0f);
+        glRotatef(AngY, 0, 1, 0);
+        desenhaComTexturaReplicada();
         glPopMatrix();
     }
+}
 
+void desenhaInimigo(Inimigo i)
+{
+    glPushMatrix();
+    glBindTexture (GL_TEXTURE_2D, TexEnemy);
+    glTranslatef (i.pos.x, i.pos.y, i.pos.z);
+    glScalef(i.scale.x, i.scale.x, i.scale.x);
+    glTranslatef(0.0f, 0.0f, 0.0f);
+    desenhaComTexturaReplicada();
+    glPopMatrix();
 }
 
 // **********************************************************************
@@ -519,43 +752,40 @@ void display( void )
 
 	glMatrixMode(GL_MODELVIEW);
 
-	for (int i =0; i<altura; i++)
+	desenhaTerreno();
+	int i, j;
+
+	for (i =0; i<altura; i++)
     {
-        for (int j=0; j <largura; j++)
+        for (j=0; j <largura; j++)
         {
-            float transX = float(i);
-            float transZ = float(j);
-            CriaObjetoMapa(transX*2, transZ*2, mapMatrix[i][j]);
+            float transX = float(i)*2.0f;
+            float transZ = float(j)*2.0f;
             /*glPushMatrix();
                 glTranslatef ( transX, -2.0f, transZ );
                 //glRotatef(AngY,0,1,0);
                 //glColor3f(0.5f,0.0f,0.0f); // Vermelho
-                glBindTexture (GL_TEXTURE_2D, TEX3);
+                glBindTexture (GL_TEXTURE_2D, TexGrass);
                 glScalef(1.0f, 0.01f, 1.0f);
                 DesenhaCubo();
             glPopMatrix();*/
         }
     }
 
+    for(i = 0; i < nObjs; i++)
+    {
+        desenhaObjetoEstatico(objs[i]);
+    }
 
-	glPushMatrix();
-		glTranslatef ( 2.0f, 0.0f, -5.0f );
-        //glRotatef(AngY,0,1,0);
-		//glColor3f(0.5f,0.0f,0.0f); // Vermelho
-        //glColor3f(0.0f,0.6f,0.0f);
-        glScaled(0.1f, 0.1f, 0.1f);
-        ExibeObjeto(TriObj,NFacesTriObj);
-	glPopMatrix();
+    for(i = 0; i < nCapsulas; i++)
+    {
+        desenhaCombustivel(capsulas[i]);
+    }
 
-	glPushMatrix();
-		glTranslatef ( -2.0f, 1.0f, -5.0f );
-		//glRotatef(AngY,0,1,0);
-		//glColor3f(0.0f,0.6f,0.0f); // Verde
-        glBindTexture (GL_TEXTURE_2D, TEXFuel);
-        glScaled(0.1f, 0.1f, 0.1f);
-		DesenhaCombustivel();
-		//glTranslatef ( -2.0f, 2.0f, -5.0f );
-	glPopMatrix();
+    for(i = 0; i < nInimigos; i++)
+    {
+        desenhaInimigo(inimigos[i]);
+    }
 
 	glutSwapBuffers();
 }
@@ -589,7 +819,7 @@ void animate()
     }
     //cout << "AccumTime: " << AccumTime << endl;
     // Anima cubos
-    AngY++;
+    AngY+=0.5f;
     // Sa;va o tempo para o pr—ximo ciclo de rendering
     last_idle_time = time_now;
 
@@ -613,36 +843,6 @@ void keyboard ( unsigned char key, int x, int y )
     case 27:        // Termina o programa qdo
       exit ( 0 );   // a tecla ESC for pressionada
       break;
-    case 'w':
-        //PosicaoNova = PosicaoAtual + VetorAlvoUnitario * TamanhoDoPasso
-        //AlvoNovo = AlvoAtual + + VetorAlvoUnitario * TamanhoDoPasso
-        posX = posX + 1*step;
-        posZ = posZ + 1*step;
-
-        alvoNovoX = alvoNovoX + 0.1*step;
-        alvoNovoZ = alvoNovoX + 0.1*step;
-        break;
-    case 's':
-        posX = posX - 1*step;
-        posZ = posZ -1*step;
-
-        alvoNovoX = alvoNovoX - 1*step;
-        alvoNovoZ = alvoNovoX - 1*step;
-        break;
-    case 'a':
-        //AlvoNovo.X = AlvoAtual.X*cos(alfa) + AlvoAtual.Z*sen(alfa)
-        //AlvoNovo.Y =  AlvoAtual.Y
-        //AlvoNovo.Z = -AlvoAtual.X*sen(alfa) + AlvoAtual.Z*cos(alfa)
-        yrotrad = (1 / 180 * 3.141592654f);
-        alvoNovoX -= float(cos(yrotrad)) * 0.2;
-        alvoNovoZ -= float(sin(yrotrad)) * 0.2;
-        break;
-    case 'd':
-        yrotrad = (1 / 180 * 3.141592654f);
-        alvoNovoX += float(cos(yrotrad)) * 0.2;
-        alvoNovoZ += float(sin(yrotrad)) * 0.2;
-        break;
-
     default:
             cout << key;
       break;
@@ -657,32 +857,51 @@ void keyboard ( unsigned char key, int x, int y )
 void arrow_keys ( int a_keys, int x, int y )
 {
     float fraction = 0.15f;
+    bool objCol;
 
 	switch ( a_keys )
 	{
-		case GLUT_KEY_UP:       // When Up Arrow Is Pressed...
-			//glutFullScreen ( ); // Go Into Full Screen Mode
-			obs.x += alvo.x * fraction;
-			obs.z += alvo.z * fraction;
-			cout << "#############" << endl;
-			cout << obs.x << endl;
-			cout << obs.z << endl;
-			cout << "#############" << endl;
+		case GLUT_KEY_UP:
+			if(true)
+            {
+                objCol = testaColisaoObjetoEstatico();
+                if(objCol == true)
+                {
+                    play.pos.x += play.alvo.x * fraction;
+                }
+                else
+                {
+                    play.pos.x += play.alvo.x * fraction;
+                    play.pos.z += play.alvo.z * fraction;
+                }
+
+                cout << "#############" << endl;
+                cout << "POS" << endl;
+                cout << play.pos.x << endl;
+                cout << play.pos.z << endl;
+                cout << "ALVO" << endl;
+                cout << play.alvo.x << endl;
+                cout << play.alvo.z << endl;
+                cout << "#############" << endl;
+
+            }
 			break;
-	    case GLUT_KEY_DOWN:     // When Down Arrow Is Pressed...
-			//glutInitWindowSize  ( 700, 500 );
-			obs.x -= alvo.x * fraction;
-			obs.z -= alvo.z * fraction;
+	    case GLUT_KEY_DOWN:
+			if(true)
+            {
+                play.pos.x -= play.alvo.x * fraction;
+                play.pos.z -= play.alvo.z * fraction;
+            }
 			break;
         case GLUT_KEY_LEFT:
             angle -= 0.05f;
-            alvo.x = sin(angle);
-            alvo.z = -cos(angle);
+            play.alvo.x = sin(angle);
+            play.alvo.z = -cos(angle);
             break;
         case GLUT_KEY_RIGHT:
             angle += 0.05f;
-            alvo.x = sin(angle);
-            alvo.z = -cos(angle);
+            play.alvo.x = sin(angle);
+            play.alvo.z = -cos(angle);
             break;
 		default:
 			break;

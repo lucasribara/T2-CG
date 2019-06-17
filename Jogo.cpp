@@ -43,6 +43,7 @@ typedef struct ObjetoEstatico //casa ou predio
     Ponto scale;
     float max_x, max_z, min_x, min_z;
     int tipo;
+    float rot;
 } ObjetoEstatico;
 
 typedef struct Inimigo
@@ -86,6 +87,8 @@ Player play = {{0.0f, -0.4f, 5.0f}, {0.0f, 0.0f, -1.0f}, 0.5f, 5.5f, -0.5f, 4.5f
 
 float colisionThrehsold = 0.2f;
 
+float angObj = 0.0f;
+
 int nObjs;
 int nInimigos;
 int nCapsulas;
@@ -99,10 +102,10 @@ GLuint TexBuilding, TexHouse, TexGrass, TexDirt, TexFuel, TexEnemy;
 float posX=0, posY=0, posZ=0;
 float mov = 3;
 float step= 0.1;
-float velTiro = 0.01f;
-float velInimigo = 0.005f;
+float velTiro = 0.03f;
+float velInimigo = 0.01f;
 
-int mapMatrix[10][10];
+int mapMatrix[1000][1000];
 // angle of rotation for the camera direction
 float angle=0.0;
 float angleY = 0.0f;
@@ -485,6 +488,8 @@ void armazenaObjetos()
                 objs[objCount2].max_z = objs[objCount2].pos.z + 1.0f;
                 objs[objCount2].min_z = objs[objCount2].pos.z - 1.0f;
                 objs[objCount2].tipo = 0;
+                objs[objCount2].rot = angObj;
+                angObj += 90.0f;
                 objCount2++;
             }
             if(mapMatrix[i][j] == 2 && objCount2 < objCount)
@@ -496,6 +501,8 @@ void armazenaObjetos()
                 objs[objCount2].max_z = objs[objCount2].pos.z + 1.0f;
                 objs[objCount2].min_z = objs[objCount2].pos.z - 1.0f;
                 objs[objCount2].tipo = 1;
+                objs[objCount2].rot = angObj;
+                angObj += 90.0f;
                 objCount2++;
             }
             if(mapMatrix[i][j] == 4 && objCount2 < objCount)
@@ -507,6 +514,8 @@ void armazenaObjetos()
                 objs[objCount2].max_z = objs[objCount2].pos.z + 0.1f;
                 objs[objCount2].min_z = objs[objCount2].pos.z - 0.1f;
                 objs[objCount2].tipo = 2;
+                objs[objCount2].rot = angObj;
+                angObj += 90.0f;
                 objCount2++;
             }
             if(mapMatrix[i][j] == 5 && fuelCount2 < fuelCount)
@@ -854,6 +863,7 @@ void desenhaObjetoEstatico(ObjetoEstatico obj)
         glTranslatef (obj.pos.x, obj.pos.y, obj.pos.z);
         glBindTexture (GL_TEXTURE_2D, TexHouse);
         glScalef(obj.scale.x, obj.scale.y, obj.scale.z);
+        glRotatef(obj.rot, 0, 1, 0);
         desenhaComTexturaEstendida();
         glPopMatrix();
     }
@@ -865,6 +875,7 @@ void desenhaObjetoEstatico(ObjetoEstatico obj)
         glTranslatef (obj.pos.x, obj.pos.y, obj.pos.z);
         glBindTexture (GL_TEXTURE_2D, TexBuilding);
         glScalef(obj.scale.x, obj.scale.y, obj.scale.z);
+        glRotatef(obj.rot, 0, 1, 0);
         desenhaComTexturaEstendida();
         glPopMatrix();
     }
@@ -875,6 +886,7 @@ void desenhaObjetoEstatico(ObjetoEstatico obj)
         glColor3f(0.0f,50.0f,0.0f);
 		glTranslatef (obj.pos.x, obj.pos.y, obj.pos.z);
         glScalef(obj.scale.x, obj.scale.x, obj.scale.x);
+        glRotatef(obj.rot, 0, 1, 0);
         ExibeObjeto(TriObj,NFacesTriObj);
         glPopMatrix();
     }
@@ -1147,30 +1159,21 @@ void arrow_keys ( int a_keys, int x, int y )
 	switch ( a_keys )
 	{
 		case GLUT_KEY_UP:
-			if(true)
+            angleY = 0.0f;
+            play.alvo.y = 0.0f;
+            if(testaColisaoObjetoEstatico() == false && testaColisaoLimites() == false)
             {
-                angleY = 0.0f;
-                play.alvo.y = 0.0f;
-                if(testaColisaoObjetoEstatico() == false && testaColisaoLimites() == false)
+                if(play.fuelLevel > 0.0f)
                 {
-                    if(play.fuelLevel > 0.0f)
-                    {
-                        play.fuelLevel -= 0.25f;
-                        play.pos.x += play.alvo.x * fraction;
-                        play.pos.z += play.alvo.z * fraction;
-                    }
-
-
+                    play.fuelLevel -= 0.15f;
+                    play.pos.x += play.alvo.x * fraction;
+                    play.pos.z += play.alvo.z * fraction;
                 }
+
 
             }
 			break;
 	    case GLUT_KEY_DOWN:
-			if(true)
-            {
-                play.pos.x -= play.alvo.x * fraction;
-                play.pos.z -= play.alvo.z * fraction;
-            }
 			break;
         case GLUT_KEY_LEFT:
             angle -= 0.05f;

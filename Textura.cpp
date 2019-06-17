@@ -94,6 +94,7 @@ float step= 0.1;
 int mapMatrix[10][10];
 // angle of rotation for the camera direction
 float angle=0.0;
+float angleY = 0.0f;
 // actual vector representing the camera's direction
 float lx=0.0f,lz=-1.0f;
 // XZ position of the camera
@@ -843,6 +844,16 @@ void keyboard ( unsigned char key, int x, int y )
     case 27:        // Termina o programa qdo
       exit ( 0 );   // a tecla ESC for pressionada
       break;
+    case 'w':
+        if(angleY < 1.0f) angleY+=0.05f;
+        play.alvo.y = sin(angleY);
+        //play.alvo.z = -cos(angleY);
+        break;
+    case 's':
+        if(angleY > -1.0f) angleY-=0.05f;
+        play.alvo.y = sin(angleY);
+        //play.alvo.z = -cos(angleY);
+        break;
     default:
             cout << key;
       break;
@@ -864,6 +875,8 @@ void arrow_keys ( int a_keys, int x, int y )
 		case GLUT_KEY_UP:
 			if(true)
             {
+                angleY = 0.0f;
+                play.alvo.y = 0.0f;
                 objCol = testaColisaoObjetoEstatico();
                 if(objCol == false)
                 {
@@ -891,11 +904,15 @@ void arrow_keys ( int a_keys, int x, int y )
 			break;
         case GLUT_KEY_LEFT:
             angle -= 0.05f;
+            angleY = 0.0f;
+            play.alvo.y = 0.0f;
             play.alvo.x = sin(angle);
             play.alvo.z = -cos(angle);
             break;
         case GLUT_KEY_RIGHT:
             angle += 0.05f;
+            angleY = 0.0f;
+            play.alvo.y = 0.0f;
             play.alvo.x = sin(angle);
             play.alvo.z = -cos(angle);
             break;
